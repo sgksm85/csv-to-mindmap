@@ -131,26 +131,50 @@ export const createMindmap = async (contents: DSVRowArray<string> | string) => {
   let root;
 
   if (Array.isArray(contents)) {
-    root = createGraphFromCsv(contents); // CSVデータ用
+    root = createGraphFromCsv(contents);
   } else {
-    root = await createGraphFromMarkdown(contents); // Markdownデータ用
+    root = await createGraphFromMarkdown(contents);
   }
 
-  // 現在のビューポートの中心座標を取得
+  if (!root) {
+    console.warn('No root node found in the data');
+    return;
+  }
+
+  // ビューポートの詳細をログ出力
   const viewport = await miro.board.viewport.get();
-  const position = {
-    x: viewport.x + viewport.width / 2,
-    y: viewport.y + viewport.height / 2,
-  };
-
-  // デバッグログを追加
-  console.log('Creating mindmap with root:', root);
-  console.log('At position:', position);
-
-  // 取得したビューポートの中心にマインドマップを作成
-  await miro.board.experimental.createMindmapNode({
-    ...root,
-    x: position.x,
-    y: position.y,
+  console.log('Current viewport:', {
+    x: viewport.x,
+    y: viewport.y,
+    width: viewport.width,
+    height: viewport.height,
+    right: viewport.x + viewport.width,
+    bottom: viewport.y + viewport.height
   });
+
+  // 左側の開始位置を計算
+  const startPosition = {
+    x: viewport.x + 200, // 左端から200px
+    y: viewport.y + (viewport.height / 2)
+  };
+  console.log('Attempted start position:', startPosition);
+
+  try {
+    const mindmap = await miro.board.experimental.createMindmapNode({
+      nodeView: root.nodeView,
+      children: root.children,
+      x: startPosition.x,
+      y: startPosition.y
+    });
+    console.log('Created mindmap:', mindmap);
+  } catch (error) {
+    console.error('Error with position:', startPosition, error);
+    
+    // エラーの場合、座標なしで再試行
+    console.log('Retrying without position...');
+    await miro.board.experimental.createMindmapNode({
+      nodeView: root.nodeView,
+      children: root.children
+    });
+  }
 };
