@@ -137,44 +137,19 @@ export const createMindmap = async (contents: DSVRowArray<string> | string) => {
   }
 
   if (!root) {
-    console.warn('No root node found in the data');
+    console.warn('マインドマップのデータが見つかりません');
     return;
   }
 
-  // ビューポートの詳細をログ出力
-  const viewport = await miro.board.viewport.get();
-  console.log('Current viewport:', {
-    x: viewport.x,
-    y: viewport.y,
-    width: viewport.width,
-    height: viewport.height,
-    right: viewport.x + viewport.width,
-    bottom: viewport.y + viewport.height
-  });
-
-  // 左側の開始位置を計算
-  const startPosition = {
-    x: viewport.x + 200, // 左端から200px
-    y: viewport.y + (viewport.height / 2)
-  };
-  console.log('Attempted start position:', startPosition);
-
   try {
-    const mindmap = await miro.board.experimental.createMindmapNode({
-      nodeView: root.nodeView,
-      children: root.children,
-      x: startPosition.x,
-      y: startPosition.y
-    });
-    console.log('Created mindmap:', mindmap);
-  } catch (error) {
-    console.error('Error with position:', startPosition, error);
-    
-    // エラーの場合、座標なしで再試行
-    console.log('Retrying without position...');
+    // 変数宣言を削除し、直接awaitする
     await miro.board.experimental.createMindmapNode({
       nodeView: root.nodeView,
       children: root.children
     });
+
+  } catch (error) {
+    console.error('マインドマップ作成エラー:', error);
+    throw error;
   }
 };
