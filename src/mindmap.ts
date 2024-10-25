@@ -141,15 +141,26 @@ export const createMindmap = async (contents: DSVRowArray<string> | string) => {
     return;
   }
 
+  const viewport = await miro.board.viewport.get();
+  console.log('現在のビューポート:', viewport);
+
+  const startPosition = {
+    x: viewport.x + (viewport.width * 0.4),
+    y: viewport.y + (viewport.height / 2)
+  };
+
   try {
-    // 変数宣言を削除し、直接awaitする
+    await miro.board.experimental.createMindmapNode({
+      nodeView: root.nodeView,
+      children: root.children,
+      x: startPosition.x,
+      y: startPosition.y
+    });
+  } catch (error) {
+    console.error('指定位置での作成に失敗:', error);
     await miro.board.experimental.createMindmapNode({
       nodeView: root.nodeView,
       children: root.children
     });
-
-  } catch (error) {
-    console.error('マインドマップ作成エラー:', error);
-    throw error;
   }
 };
