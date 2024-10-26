@@ -16,8 +16,7 @@ const createGraphFromCsv = (contents: DSVRowArray<string>) => {
   
   let root: Node | undefined;
   const visited: Record<string, Node> = {};
-  const levelMap: Record<string, Node> = {};
-  let currentRoot: string | undefined;
+  const rootNodes: Record<string, Node> = {};
 
   for (const row of contents) {
     // 各列の値を配列として取得
@@ -26,37 +25,46 @@ const createGraphFromCsv = (contents: DSVRowArray<string>) => {
     // 空行をスキップ
     if (!values[0]) continue;
     
-    // 新しいルートノードの場合
-    if (values[0] !== currentRoot) {
-      currentRoot = values[0];
-      if (!levelMap[currentRoot]) {
-        const node = { nodeView: { content: currentRoot }, children: [] };
-        levelMap[currentRoot] = node;
-        if (!root) {
-          root = node;
-        }
+    // ルートノードの処理
+    const rootValue = values[0];
+    if (!rootNodes[rootValue]) {
+      const node = { nodeView: { content: rootValue }, children: [] };
+      rootNodes[rootValue] = node;
+      if (!root) {
+        root = node;
       }
     }
 
-    let currentParent = levelMap[currentRoot!];
+    let currentParent = rootNodes[rootValue];
+    let currentPath = rootValue;
 
     // 2列目以降を順次処理
     for (let i = 1; i < values.length; i++) {
       if (!values[i]) continue;
       
-      const key = values.slice(0, i + 1).join('-');
-      if (!visited[key]) {
+      currentPath = `${currentPath}-${values[i]}`;
+      
+      if (!visited[currentPath]) {
         const node = { nodeView: { content: values[i] }, children: [] };
-        visited[key] = node;
+        visited[currentPath] = node;
         currentParent.children.push(node);
-        currentParent = node;
-      } else {
-        currentParent = visited[key];
       }
+      
+      currentParent = visited[currentPath];
     }
   }
 
-  console.log("処理完了: ルートノード数", Object.keys(levelMap).length);
+  // 各ルートノードを最初のルートノードの子として追加
+  if (root) {
+    const firstRoot = root;
+    Object.values(rootNodes).forEach(node => {
+      if (node !== firstRoot) {
+        firstRoot.children.push(node);
+      }
+    });
+  }
+
+  console.log("処理完了: ルートノード数", Object.keys(rootNodes).length);
   return root;
 };
 
@@ -183,3 +191,4 @@ export const createMindmap = async (contents: DSVRowArray<string> | string) => {
     throw error;
   }
 };
+
