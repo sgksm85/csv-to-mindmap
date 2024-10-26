@@ -14,9 +14,9 @@ interface Node {
 const createGraphFromCsv = (contents: DSVRowArray<string>) => {
   console.log("処理開始: 総行数", contents.length);
   
-  // 最初のルートノードを作成
+  // 固定の最上位ルートノードを作成
   const rootNode: Node = {
-    nodeView: { content: "マインドマップ" },
+    nodeView: { content: "Title" },  // 固定のタイトル
     children: []
   };
   
@@ -27,18 +27,18 @@ const createGraphFromCsv = (contents: DSVRowArray<string>) => {
     const values = Object.values(row);
     if (!values[0]) continue;
     
-    // ルートノードの処理
+    // ルートノードの処理（2層目として追加）
     const rootValue = values[0];
     if (!rootNodes[rootValue]) {
       const node = { nodeView: { content: rootValue }, children: [] };
       rootNodes[rootValue] = node;
-      rootNode.children.push(node); // 直接最上位ルートの子として追加
+      rootNode.children.push(node); // Titleの直下に配置
     }
 
     let currentParent = rootNodes[rootValue];
     let currentPath = rootValue;
 
-    // 2列目以降を順次処理
+    // 2列目以降を順次処理（3層目以降として追加）
     for (let i = 1; i < values.length; i++) {
       if (!values[i]) continue;
       
@@ -166,7 +166,7 @@ export const createMindmap = async (contents: DSVRowArray<string> | string) => {
     const centerX = viewport.x + (viewport.width * 0.4);
     const centerY = viewport.y + (viewport.height / 2);
 
-    // マインドマップノードを作成
+    // マインドマップノー���を作成
     await miro.board.experimental.createMindmapNode({
       nodeView: root.nodeView,
       x: centerX,
