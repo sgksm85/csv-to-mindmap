@@ -13,6 +13,10 @@ interface Node {
  */
 const createGraphFromCsv = (contents: DSVRowArray<string>) => {
   console.log("処理開始: 総行数", contents.length);
+  console.log("列名:", contents.columns); // デバッグ用：実際の列名を確認
+  
+  // 列名の取得（最初の列を親、2番目を中間、3番目を子ノードとして扱う）
+  const [rootColumn, level2Column, level3Column] = contents.columns;
   
   let root: Node | undefined;
   const visited: Record<string, Node> = {};
@@ -21,13 +25,13 @@ const createGraphFromCsv = (contents: DSVRowArray<string>) => {
 
   for (const row of contents) {
     // 空行をスキップ
-    if (!row['0']) continue;
+    if (!row[rootColumn]) continue;
     
-    console.log("処理中の行:", row['0'], row['1'], row['2']);
+    console.log("処理中の行:", row[rootColumn], row[level2Column], row[level3Column]);
     
     // 新しいルートノードの場合
-    if (row['0'] !== currentRoot) {
-      currentRoot = row['0'];
+    if (row[rootColumn] !== currentRoot) {
+      currentRoot = row[rootColumn];
       if (!levelMap[currentRoot]) {
         const node = { nodeView: { content: currentRoot }, children: [] };
         levelMap[currentRoot] = node;
@@ -40,10 +44,10 @@ const createGraphFromCsv = (contents: DSVRowArray<string>) => {
     let currentParent = levelMap[currentRoot!];
 
     // Level2の処理
-    if (row['1']) {
-      const key = `${currentRoot}-${row['1']}`;
+    if (row[level2Column]) {
+      const key = `${currentRoot}-${row[level2Column]}`;
       if (!visited[key]) {
-        const node = { nodeView: { content: row['1'] }, children: [] };
+        const node = { nodeView: { content: row[level2Column] }, children: [] };
         visited[key] = node;
         currentParent.children.push(node);
         currentParent = node;
@@ -53,10 +57,10 @@ const createGraphFromCsv = (contents: DSVRowArray<string>) => {
     }
 
     // Level3の処理
-    if (row['2']) {
-      const key = `${currentRoot}-${row['1']}-${row['2']}`;
+    if (row[level3Column]) {
+      const key = `${currentRoot}-${row[level2Column]}-${row[level3Column]}`;
       if (!visited[key]) {
-        const node = { nodeView: { content: row['2'] }, children: [] };
+        const node = { nodeView: { content: row[level3Column] }, children: [] };
         visited[key] = node;
         currentParent.children.push(node);
       }
