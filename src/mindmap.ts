@@ -149,12 +149,12 @@ export const createMindmap = async (contents: DSVRowArray<string> | string) => {
     const centerX = viewport.x + (viewport.width * 0.4);
     const centerY = viewport.y + (viewport.height / 2);
 
-    // 一度にすべてのノードを作成
+    // マインドマップノードを作成
     await miro.board.experimental.createMindmapNode({
       nodeView: root.nodeView,
-      children: root.children,
       x: centerX,
-      y: centerY
+      y: centerY,
+      children: root.children
     });
 
     console.log('マインドマップの作成が完了しました');
