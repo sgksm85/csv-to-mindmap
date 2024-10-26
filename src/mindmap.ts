@@ -142,39 +142,25 @@ export const createMindmap = async (contents: DSVRowArray<string> | string) => {
       throw new Error('マインドマップのデータが見つかりません');
     }
 
-    // データの構造を確認
     console.log('作成するマインドマップの構造:', JSON.stringify(root, null, 2));
 
     // ビューポートの取得
     const viewport = await miro.board.viewport.get();
-    const startPosition = {
-      x: viewport.x + (viewport.width * 0.4),
-      y: viewport.y + (viewport.height / 2)
-    };
+    const centerX = viewport.x + (viewport.width * 0.4);
+    const centerY = viewport.y + (viewport.height / 2);
 
-    // ノードの作成を再帰的に処理
-    const createNodes = async (node: Node, parentId?: string) => {
-      const nodeData = {
-        nodeView: node.nodeView,
-        x: startPosition.x,
-        y: startPosition.y,
-        parentId
-      };
+    // 一度にすべてのノードを作成
+    await miro.board.experimental.createMindmapNode({
+      nodeView: root.nodeView,
+      children: root.children,
+      x: centerX,
+      y: centerY
+    });
 
-      const createdNode = await miro.board.experimental.createMindmapNode(nodeData);
-      
-      // 子ノードを順番に作成
-      for (const child of node.children) {
-        await createNodes(child, createdNode.id);
-      }
-    };
-
-    // ルートノードから作成開始
-    await createNodes(root);
     console.log('マインドマップの作成が完了しました');
 
   } catch (error) {
     console.error('マインドマップ作成中にエラーが発生:', error);
-    throw error; // エラーを上位に伝播させる
+    throw error;
   }
 };
