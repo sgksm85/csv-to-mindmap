@@ -130,37 +130,51 @@ const findParentNodeByLevel = (root: Node, targetLevel: number, currentLevel = 1
 export const createMindmap = async (contents: DSVRowArray<string> | string) => {
   let root;
 
-  if (Array.isArray(contents)) {
-    root = createGraphFromCsv(contents);
-  } else {
-    root = await createGraphFromMarkdown(contents);
-  }
-
-  if (!root) {
-    console.warn('マインドマップのデータが見つかりません');
-    return;
-  }
-
-  const viewport = await miro.board.viewport.get();
-  console.log('現在のビューポート:', viewport);
-
-  const startPosition = {
-    x: viewport.x + (viewport.width * 0.4),
-    y: viewport.y + (viewport.height / 2)
-  };
-
   try {
-    await miro.board.experimental.createMindmapNode({
-      nodeView: root.nodeView,
-      children: root.children,
-      x: startPosition.x,
-      y: startPosition.y
-    });
+    // データの処理
+    if (Array.isArray(contents)) {
+      root = createGraphFromCsv(contents);
+    } else {
+      root = await createGraphFromMarkdown(contents);
+    }
+
+    if (!root) {
+      throw new Error('マインドマップのデータが見つかりません');
+    }
+
+    // データの構造を確認
+    console.log('作成するマインドマップの構造:', JSON.stringify(root, null, 2));
+
+    // ビューポートの取得
+    const viewport = await miro.board.viewport.get();
+    const startPosition = {
+      x: viewport.x + (viewport.width * 0.4),
+      y: viewport.y + (viewport.height / 2)
+    };
+
+    // ノードの作成を再帰的に処理
+    const createNodes = async (node: Node, parentId?: string) => {
+      const nodeData = {
+        nodeView: node.nodeView,
+        x: startPosition.x,
+        y: startPosition.y,
+        parentId
+      };
+
+      const createdNode = await miro.board.experimental.createMindmapNode(nodeData);
+      
+      // 子ノードを順番に作成
+      for (const child of node.children) {
+        await createNodes(child, createdNode.id);
+      }
+    };
+
+    // ルートノードから作成開始
+    await createNodes(root);
+    console.log('マインドマップの作成が完了しました');
+
   } catch (error) {
-    console.error('指定位置での作成に失敗:', error);
-    await miro.board.experimental.createMindmapNode({
-      nodeView: root.nodeView,
-      children: root.children
-    });
+    console.error('マインドマップ作成中にエラーが発生:', error);
+    throw error; // エラーを上位に伝播させる
   }
 };
