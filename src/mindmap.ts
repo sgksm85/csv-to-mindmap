@@ -13,28 +13,42 @@ interface Node {
  */
 const createGraphFromCsv = (contents: DSVRowArray<string>) => {
   let root: Node | undefined;
-
   const visited: Record<string, Node> = {};
+  const levelMap: Record<string, Node> = {};
 
   for (const row of contents) {
-    let parent = undefined;
-    for (const col of contents.columns) {
-      const value = row[col]!;
+    let currentParent: Node | undefined;
+    
+    // Root列の処理
+    const rootValue = row['Root'];
+    if (rootValue && !levelMap[rootValue]) {
+      const node = { nodeView: { content: rootValue }, children: [] };
+      levelMap[rootValue] = node;
+      if (!root) root = node;
+    }
+    currentParent = levelMap[rootValue!];
 
-      const key = `${col}-${value}`;
-
+    // Level2列の処理
+    const level2Value = row['Level2'];
+    if (level2Value) {
+      const key = `${rootValue}-${level2Value}`;
       if (!visited[key]) {
-        const node = { nodeView: { content: value }, children: [] };
+        const node = { nodeView: { content: level2Value }, children: [] };
         visited[key] = node;
-
-        if (parent) {
-          parent.children.push(visited[key]);
-        } else {
-          root = node;
-        }
+        currentParent?.children.push(node);
       }
+      currentParent = visited[key];
+    }
 
-      parent = visited[key];
+    // Level3列の処理
+    const level3Value = row['Level3'];
+    if (level3Value) {
+      const key = `${rootValue}-${level2Value}-${level3Value}`;
+      if (!visited[key]) {
+        const node = { nodeView: { content: level3Value }, children: [] };
+        visited[key] = node;
+        currentParent?.children.push(node);
+      }
     }
   }
 
