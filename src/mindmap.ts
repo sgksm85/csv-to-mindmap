@@ -14,15 +14,17 @@ interface Node {
 const createGraphFromCsv = (contents: DSVRowArray<string>) => {
   console.log("処理開始: 総行数", contents.length);
   
-  let root: Node | undefined;
+  // 最初のルートノードを作成
+  const rootNode: Node = {
+    nodeView: { content: "マインドマップ" },
+    children: []
+  };
+  
   const visited: Record<string, Node> = {};
   const rootNodes: Record<string, Node> = {};
 
   for (const row of contents) {
-    // 各列の値を配列として取得
     const values = Object.values(row);
-    
-    // 空行をスキップ
     if (!values[0]) continue;
     
     // ルートノードの処理
@@ -30,9 +32,7 @@ const createGraphFromCsv = (contents: DSVRowArray<string>) => {
     if (!rootNodes[rootValue]) {
       const node = { nodeView: { content: rootValue }, children: [] };
       rootNodes[rootValue] = node;
-      if (!root) {
-        root = node;
-      }
+      rootNode.children.push(node); // 直接最上位ルートの子として追加
     }
 
     let currentParent = rootNodes[rootValue];
@@ -54,18 +54,8 @@ const createGraphFromCsv = (contents: DSVRowArray<string>) => {
     }
   }
 
-  // 各ルートノードを最初のルートノードの子として追加
-  if (root) {
-    const firstRoot = root;
-    Object.values(rootNodes).forEach(node => {
-      if (node !== firstRoot) {
-        firstRoot.children.push(node);
-      }
-    });
-  }
-
   console.log("処理完了: ルートノード数", Object.keys(rootNodes).length);
-  return root;
+  return rootNode;
 };
 
 const convertMarkdownToCsvFormat = (markdownText: string): DSVRowArray<string> => {
