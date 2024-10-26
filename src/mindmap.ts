@@ -12,55 +12,58 @@ interface Node {
  * @returns Schema that can be directly passed to createMindmapNode
  */
 const createGraphFromCsv = (contents: DSVRowArray<string>) => {
-  console.log("CSV contents:", contents); // デバッグ用：入力データの確認
+  console.log("処理開始: 総行数", contents.length);
   
   let root: Node | undefined;
   const visited: Record<string, Node> = {};
   const levelMap: Record<string, Node> = {};
-
-  // 最初に列名を確認
-  console.log("Column names:", contents.columns); // デバッグ用：列名の確認
+  let currentRoot: string | undefined;
 
   for (const row of contents) {
-    let currentParent: Node | undefined;
+    // 空行をスキップ
+    if (!row['0']) continue;
     
-    // 列の値を確認
-    console.log("Processing row:", row); // デバッグ用：各行の内容確認
+    console.log("処理中の行:", row['0'], row['1'], row['2']);
     
-    // 0列目（Root）の処理
-    const rootValue = row['0'];  // 数値インデックスで参照
-    if (rootValue && !levelMap[rootValue]) {
-      const node = { nodeView: { content: rootValue }, children: [] };
-      levelMap[rootValue] = node;
-      if (!root) root = node;
-    }
-    currentParent = levelMap[rootValue!];
-
-    // 1列目（Level2）の処理
-    const level2Value = row['1'];  // 数値インデックスで参照
-    if (level2Value) {
-      const key = `${rootValue}-${level2Value}`;
-      if (!visited[key]) {
-        const node = { nodeView: { content: level2Value }, children: [] };
-        visited[key] = node;
-        currentParent?.children.push(node);
+    // 新しいルートノードの場合
+    if (row['0'] !== currentRoot) {
+      currentRoot = row['0'];
+      if (!levelMap[currentRoot]) {
+        const node = { nodeView: { content: currentRoot }, children: [] };
+        levelMap[currentRoot] = node;
+        if (!root) {
+          root = node;
+        }
       }
-      currentParent = visited[key];
     }
 
-    // 2列目（Level3）の処理
-    const level3Value = row['2'];  // 数値インデックスで参照
-    if (level3Value) {
-      const key = `${rootValue}-${level2Value}-${level3Value}`;
+    let currentParent = levelMap[currentRoot!];
+
+    // Level2の処理
+    if (row['1']) {
+      const key = `${currentRoot}-${row['1']}`;
       if (!visited[key]) {
-        const node = { nodeView: { content: level3Value }, children: [] };
+        const node = { nodeView: { content: row['1'] }, children: [] };
         visited[key] = node;
-        currentParent?.children.push(node);
+        currentParent.children.push(node);
+        currentParent = node;
+      } else {
+        currentParent = visited[key];
+      }
+    }
+
+    // Level3の処理
+    if (row['2']) {
+      const key = `${currentRoot}-${row['1']}-${row['2']}`;
+      if (!visited[key]) {
+        const node = { nodeView: { content: row['2'] }, children: [] };
+        visited[key] = node;
+        currentParent.children.push(node);
       }
     }
   }
 
-  console.log("Created root node:", root); // デバッグ用：作成されたデータ構造の確認
+  console.log("処理完了: ルートノード数", Object.keys(levelMap).length);
   return root;
 };
 
@@ -74,7 +77,7 @@ const convertMarkdownToCsvFormat = (markdownText: string): DSVRowArray<string> =
   console.log('Input Markdown:', markdownText); // デバッグ用
   
   for (const line of lines) {
-    // HTML形式のタグをパー��
+    // HTML形式のタグをパー
     const h1Match = line.match(/<h1>(.+?)<\/h1>/);
     const h2Match = line.match(/<h2>(.+?)<\/h2>/);
     const liMatch = line.match(/<li>(.+?)<\/li>/);
@@ -167,7 +170,7 @@ export const createMindmap = async (contents: DSVRowArray<string> | string) => {
 
     console.log('作成するマインドマップの構造:', JSON.stringify(root, null, 2));
 
-    // ビューポート��取得
+    // ビューポート取得
     const viewport = await miro.board.viewport.get();
     const centerX = viewport.x + (viewport.width * 0.4);
     const centerY = viewport.y + (viewport.height / 2);
